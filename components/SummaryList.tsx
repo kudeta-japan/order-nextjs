@@ -2,26 +2,19 @@
 
 import { useMemo, useState, useEffect } from 'react'
 import { useApp } from '@/contexts/AppContext'
+import { loadOrderHistory, saveOrderHistoryEntry } from '@/lib/storage'
+import type { OrderHistoryEntry } from '@/lib/types'
 
 export function SummaryList() {
   const { orders, currentDate, master, config } = useApp()
-  const [isConfirmed, setIsConfirmed] = useState(false)
-  const [confirmedAt, setConfirmedAt] = useState<string | null>(null)
+  const [orderHistory, setOrderHistory] = useState<OrderHistoryEntry[]>([])
+  const [showHistory, setShowHistory] = useState(false)
 
-  // 確定状態の読み込み
   useEffect(() => {
-    if (typeof window !== 'undefined' && currentDate) {
-      const key = `order_confirmed_${currentDate}_${config.storeId || 'default'}`
-      const confirmed = localStorage.getItem(key)
-      if (confirmed) {
-        setIsConfirmed(true)
-        setConfirmedAt(confirmed)
-      } else {
-        setIsConfirmed(false)
-        setConfirmedAt(null)
-      }
+    if (typeof window !== 'undefined') {
+      setOrderHistory(loadOrderHistory())
     }
-  }, [currentDate, config.storeId])
+  }, [currentDate])
 
   const summary = useMemo(() => {
     const dateOrders = orders.filter(o => o.date === currentDate && o.qty > 0)
@@ -49,9 +42,12 @@ export function SummaryList() {
     return byVendor
   }, [orders, currentDate, master])
 
-  const handleCopy = () => {
+  const todayHistory = useMemo(() => {
+    return orderHistory.filter(h => h.date === currentDate)
+  }, [orderHistory, currentDate])
+
+  const handleCopyAll = () => {
     let text = `【発注内容】${currentDate}\n\n`
-    
     Object.entries(summary).forEach(([vendor, items]) => {
       text += `■ ${vendor}\n`
       items.forEach(({ item, qty, unit }) => {
@@ -59,45 +55,34 @@ export function SummaryList() {
       })
       text += '\n'
     })
-
     navigator.clipboard.writeText(text).then(() => {
       alert('発注内容をクリップボードにコピーしました')
-    }).catch(() => {
-      alert('コピーに失敗しました')
+    }).catch(() => alert('コピーに失敗しました'))
+  }
+
+  const handleOrderVendor = (vendor: string, items: Array<{ item: string; qty: number; unit: string }>) => {
+    let text = `【発注】${currentDate} ${vendor}\n\n`
+    items.forEach(({ item, qty, unit }) => {
+      text += `${item} ${qty}${unit}\n`
     })
+    navigator.clipboard.writeText(text).then(() => {
+      const entry: OrderHistoryEntry = {
+        date: currentDate,
+        vendor,
+        timestamp: Date.now(),
+      }
+      saveOrderHistoryEntry(entry)
+      setOrderHistory(loadOrderHistory())
+      alert(`${vendor} の発注内容をコピーしました。発注履歴に記録しました。`)
+    }).catch(() => alert('コピーに失敗しました'))
   }
 
-  const handleConfirm = () => {
-    const totalItems = Object.values(summary).reduce((sum, items) => sum + items.length, 0)
-    const totalQty = Object.values(summary).reduce((sum, items) => 
-      sum + items.reduce((s, item) => s + item.qty, 0), 0
-    )
-
-    if (totalItems === 0 || totalQty === 0) {
-      alert('発注データがありません。発注を確定できません。')
-      return
-    }
-
-    const confirmMessage = `以下の発注内容を確定しますか？\n\n日付: ${currentDate}\n業者数: ${Object.keys(summary).length}社\n品目数: ${totalItems}品目\n合計数量: ${totalQty}\n\n確定後は変更できません。`
-    
-    if (window.confirm(confirmMessage)) {
-      const now = new Date().toISOString()
-      const key = `order_confirmed_${currentDate}_${config.storeId || 'default'}`
-      localStorage.setItem(key, now)
-      setIsConfirmed(true)
-      setConfirmedAt(now)
-      alert(`発注を確定しました。\n確定日時: ${new Date(now).toLocaleString('ja-JP')}`)
-    }
-  }
-
-  const formatConfirmedAt = (isoString: string) => {
-    const date = new Date(isoString)
-    return date.toLocaleString('ja-JP', {
-      year: 'numeric',
+  const formatTime = (timestamp: number) => {
+    return new Date(timestamp).toLocaleString('ja-JP', {
       month: '2-digit',
       day: '2-digit',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     })
   }
 
@@ -105,6 +90,24 @@ export function SummaryList() {
     return (
       <div className="max-w-[600px] mx-auto">
         <p className="text-center text-gray-500 py-8">発注データがありません</p>
+        {todayHistory.length > 0 && (
+          <div className="mt-4 p-4 border border-gray-200 rounded-xl">
+            <button
+              type="button"
+              onClick={() => setShowHistory(!showHistory)}
+              className="text-sm font-bold text-blue-600"
+            >
+              {showHistory ? '発注履歴を閉じる' : `本日の発注履歴（${todayHistory.length}件）`}
+            </button>
+            {showHistory && (
+              <ul className="mt-2 list-none p-0 text-sm text-gray-600">
+                {todayHistory.map((h, i) => (
+                  <li key={i}>{h.vendor} — {formatTime(h.timestamp)}</li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
       </div>
     )
   }
@@ -141,38 +144,48 @@ export function SummaryList() {
                 </li>
               )}
             </ul>
+            <div className="px-4 py-3 bg-gray-50 border-t border-gray-200">
+              <button
+                type="button"
+                onClick={() => handleOrderVendor(vendor, items)}
+                className="w-full min-h-[48px] px-4 py-2.5 bg-green-600 text-white border-none rounded-lg font-bold text-sm active:opacity-90 touch-manipulation"
+              >
+                発注する（{vendor}）
+              </button>
+            </div>
           </div>
         )
       })}
-      {isConfirmed && confirmedAt && (
-        <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="text-green-600 font-bold">✓ 発注確定済み</span>
-          </div>
-          <p className="text-sm text-green-700">
-            確定日時: {formatConfirmedAt(confirmedAt)}
-          </p>
-        </div>
-      )}
-      
-      <div className="mt-2.5 flex flex-col sm:flex-row gap-2">
-        <button
-          type="button"
-          onClick={handleCopy}
-          className="flex-1 min-h-[56px] sm:min-h-[44px] px-4 py-3 sm:py-2.5 bg-blue-600 text-white border-none rounded-lg font-bold text-base sm:text-sm active:opacity-90 touch-manipulation"
-        >
-          発注内容をコピー
-        </button>
-        {!isConfirmed && (
+
+      {todayHistory.length > 0 && (
+        <div className="mb-4 p-4 border border-gray-200 rounded-xl">
           <button
             type="button"
-            onClick={handleConfirm}
-            className="flex-1 min-h-[56px] sm:min-h-[44px] px-4 py-3 sm:py-2.5 bg-green-600 text-white border-none rounded-lg font-bold text-base sm:text-sm active:opacity-90 touch-manipulation"
+            onClick={() => setShowHistory(!showHistory)}
+            className="text-sm font-bold text-blue-600"
           >
-            発注を確定する
+            {showHistory ? '発注履歴を閉じる' : `本日の発注履歴（${todayHistory.length}件）`}
           </button>
-        )}
-      </div>
+          {showHistory && (
+            <ul className="mt-2 list-none p-0 text-sm text-gray-600 space-y-1">
+              {todayHistory.map((h, i) => (
+                <li key={i} className="flex justify-between">
+                  <span>{h.vendor}</span>
+                  <span>{formatTime(h.timestamp)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+
+      <button
+        type="button"
+        onClick={handleCopyAll}
+        className="w-full min-h-[48px] px-4 py-3 bg-blue-600 text-white border-none rounded-lg font-bold text-sm active:opacity-90 touch-manipulation"
+      >
+        全業者分をコピー
+      </button>
     </div>
   )
 }

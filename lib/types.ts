@@ -22,9 +22,15 @@ export interface Item {
 }
 
 export interface Config {
-  gasUrl?: string;
   staff: string;
   storeId: string;
+}
+
+/** 業者ごとの発注履歴1件 */
+export interface OrderHistoryEntry {
+  date: string;
+  vendor: string;
+  timestamp: number;
 }
 
 export interface Master {

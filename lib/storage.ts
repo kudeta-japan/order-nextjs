@@ -1,4 +1,6 @@
-import type { Master, Config, Vendor, Item } from './types'
+import type { Master, Config, Vendor, Item, OrderHistoryEntry } from './types'
+
+const ORDER_HISTORY_KEY = 'order_history_v5'
 
 const STORE_ID = 'default'
 
@@ -44,7 +46,6 @@ export function loadConfig(): Config {
   try {
     const parsed = JSON.parse(raw)
     return {
-      gasUrl: parsed.gasUrl || '',
       staff: parsed.staff || '担当者未設定',
       storeId: parsed.storeId || STORE_ID
     }
@@ -56,6 +57,25 @@ export function loadConfig(): Config {
 export function persistConfig(config: Config): void {
   if (typeof window === 'undefined') return
   localStorage.setItem('orderConfig_v5', JSON.stringify(config))
+}
+
+export function loadOrderHistory(): OrderHistoryEntry[] {
+  if (typeof window === 'undefined') return []
+  const raw = localStorage.getItem(ORDER_HISTORY_KEY)
+  if (!raw) return []
+  try {
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed : []
+  } catch (_) {
+    return []
+  }
+}
+
+export function saveOrderHistoryEntry(entry: OrderHistoryEntry): void {
+  if (typeof window === 'undefined') return
+  const list = loadOrderHistory()
+  list.unshift(entry)
+  localStorage.setItem(ORDER_HISTORY_KEY, JSON.stringify(list))
 }
 
 // v4からの移行（初回のみ）
@@ -95,7 +115,7 @@ export function migrateV4ToV5(): void {
   if (rawConfig) {
     try {
       const c = JSON.parse(rawConfig)
-      persistConfig({ gasUrl: c.gasUrl || '', staff: c.staff || '担当者未設定', storeId: STORE_ID })
+      persistConfig({ staff: c.staff || '担当者未設定', storeId: STORE_ID })
     } catch (_) {}
   }
 }
