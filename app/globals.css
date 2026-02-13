@@ -1,0 +1,92 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+html {
+  /* iOS Safariのバウンススクロールを無効化 */
+  overscroll-behavior: none;
+  /* スムーズスクロール */
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  font-family: 'Segoe UI', Meiryo, -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #f8fafc;
+  color: #1e293b;
+  line-height: 1.5;
+  padding-bottom: 60px;
+  /* iOS Safariのバウンススクロールを無効化 */
+  overscroll-behavior: none;
+  /* テキスト選択の最適化 */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button {
+  cursor: pointer;
+  /* タッチ操作の最適化 */
+  touch-action: manipulation;
+  /* タップ時のフィードバック */
+  -webkit-tap-highlight-color: transparent;
+}
+
+input[type="date"] {
+  font-family: inherit;
+  /* iOS Safariでの表示調整 */
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* iOS Safariの入力フィールドの自動ズームを防ぐ */
+input[type="text"],
+input[type="number"],
+input[type="date"],
+select,
+textarea {
+  font-size: 16px; /* 16px以上で自動ズームを防ぐ */
+}
+
+@media (min-width: 768px) {
+  input[type="text"],
+  input[type="number"],
+  input[type="date"],
+  select,
+  textarea {
+    font-size: 14px; /* デスクトップでは14pxに戻す */
+  }
+}
+
+/* スクロールバーのスタイリング（WebKit） */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
