@@ -5,9 +5,19 @@ export interface Order {
   item: string;
   qty: number;
   stock: number;
+  prep?: number;
+  prep_checked?: boolean;
   updated_at: number;
   updated_by?: string;
   store_id?: string;
+}
+
+/** レシピ（品目に紐づく） */
+export interface Recipe {
+  ingredients: string[];
+  steps: string[];
+  points: string;
+  estimatedMinutes?: number;
 }
 
 export interface Vendor {
@@ -19,6 +29,7 @@ export interface Item {
   name: string;
   unit: string;
   price: number;
+  recipe?: Recipe;
 }
 
 export interface Config {

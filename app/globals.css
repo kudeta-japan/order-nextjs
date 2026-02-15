@@ -8,8 +8,6 @@
 }
 
 html {
-  /* iOS Safariのバウンススクロールを無効化 */
-  overscroll-behavior: none;
   /* スムーズスクロール */
   scroll-behavior: smooth;
 }
@@ -21,11 +19,16 @@ body {
   color: #1e293b;
   line-height: 1.5;
   padding-bottom: 60px;
-  /* iOS Safariのバウンススクロールを無効化 */
-  overscroll-behavior: none;
   /* テキスト選択の最適化 */
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* iOS Safariのみバウンススクロールを抑止（Macのトラックパッドには影響しない） */
+@supports (-webkit-touch-callout: none) {
+  html, body {
+    overscroll-behavior-y: none;
+  }
 }
 
 button {

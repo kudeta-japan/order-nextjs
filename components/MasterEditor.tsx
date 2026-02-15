@@ -2,11 +2,26 @@
 
 import { useState, useEffect } from 'react'
 import { useApp } from '@/contexts/AppContext'
-import type { Vendor, Item } from '@/lib/types'
+import type { Vendor, Item, Recipe } from '@/lib/types'
+
+function defaultRecipe(): Recipe {
+  return { ingredients: [], steps: [], points: '', estimatedMinutes: undefined }
+}
 
 export function MasterEditor() {
   const { master, setMaster } = useApp()
   const [vendors, setVendors] = useState<Vendor[]>(master.vendors)
+  const [recipeOpenKey, setRecipeOpenKey] = useState<string | null>(null)
+  const [collapsedVendors, setCollapsedVendors] = useState<Set<number>>(new Set())
+
+  const toggleVendorCollapse = (vendorIndex: number) => {
+    setCollapsedVendors(prev => {
+      const next = new Set(prev)
+      if (next.has(vendorIndex)) next.delete(vendorIndex)
+      else next.add(vendorIndex)
+      return next
+    })
+  }
 
   useEffect(() => {
     setVendors(master.vendors)
@@ -18,7 +33,7 @@ export function MasterEditor() {
     setVendors(updated)
   }
 
-  const handleItemChange = (vendorIndex: number, itemIndex: number, field: keyof Item, value: string | number) => {
+  const handleItemChange = (vendorIndex: number, itemIndex: number, field: keyof Item, value: string | number | Recipe | undefined) => {
     const updated = [...vendors]
     const items = [...updated[vendorIndex].items]
     items[itemIndex] = { ...items[itemIndex], [field]: value }
@@ -26,10 +41,18 @@ export function MasterEditor() {
     setVendors(updated)
   }
 
+  const handleRecipeChange = (vendorIndex: number, itemIndex: number, recipe: Recipe) => {
+    handleItemChange(vendorIndex, itemIndex, 'recipe', recipe)
+  }
+
   const handleAddItem = (vendorIndex: number) => {
     const updated = [...vendors]
     updated[vendorIndex].items.push({ name: '', unit: '', price: 0 })
     setVendors(updated)
+  }
+
+  const toggleRecipe = (key: string) => {
+    setRecipeOpenKey(prev => prev === key ? null : key)
   }
 
   const handleRemoveItem = (vendorIndex: number, itemIndex: number) => {
@@ -122,9 +145,20 @@ export function MasterEditor() {
         />
       </div>
 
-      {vendors.map((vendor, vendorIndex) => (
+      {vendors.map((vendor, vendorIndex) => {
+        const isCollapsed = collapsedVendors.has(vendorIndex)
+        const itemCount = vendor.items.length
+        return (
         <div key={vendorIndex} className="bg-gray-50 border border-gray-200 rounded-lg p-3 sm:p-3 mb-3">
-          <div className="flex gap-2 items-center mb-2.5">
+          <div className="flex gap-2 items-center">
+            <button
+              type="button"
+              onClick={() => toggleVendorCollapse(vendorIndex)}
+              className="flex-shrink-0 w-9 h-9 rounded-md border border-gray-300 bg-white flex items-center justify-center active:bg-gray-100 touch-manipulation text-gray-600"
+              aria-label={isCollapsed ? '展開する' : '折りたたむ'}
+            >
+              <span className="text-lg leading-none">{isCollapsed ? '▶' : '▼'}</span>
+            </button>
             <input
               type="text"
               value={vendor.name}
@@ -132,6 +166,9 @@ export function MasterEditor() {
               placeholder="業者名"
               className="flex-1 min-h-[44px] px-3 py-2 text-base sm:text-sm border border-gray-200 rounded-md touch-manipulation"
             />
+            {isCollapsed && (
+              <span className="text-sm text-gray-500 whitespace-nowrap">品目 {itemCount} 件</span>
+            )}
             <button
               type="button"
               onClick={() => handleRemoveVendor(vendorIndex)}
@@ -141,42 +178,104 @@ export function MasterEditor() {
             </button>
           </div>
 
-          {vendor.items.map((item, itemIndex) => (
-            <div key={itemIndex} className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center mb-2 sm:mb-1.5">
-              <input
-                type="text"
-                value={item.name}
-                onChange={(e) => handleItemChange(vendorIndex, itemIndex, 'name', e.target.value)}
-                placeholder="品目名"
-                className="flex-1 min-w-0 min-h-[44px] px-3 py-2 text-base sm:text-sm border border-gray-200 rounded-md touch-manipulation"
-              />
-              <div className="flex gap-2">
-                <input
-                  type="text"
-                  value={item.unit}
-                  onChange={(e) => handleItemChange(vendorIndex, itemIndex, 'unit', e.target.value)}
-                  placeholder="単位"
-                  className="w-[80px] sm:w-[60px] min-h-[44px] px-2 py-2 text-base sm:text-sm border border-gray-200 rounded-md touch-manipulation"
-                />
-                <input
-                  type="number"
-                  value={item.price}
-                  onChange={(e) => handleItemChange(vendorIndex, itemIndex, 'price', parseFloat(e.target.value) || 0)}
-                  placeholder="単価"
-                  className="w-[100px] sm:w-[70px] min-h-[44px] px-2 py-2 text-base sm:text-sm border border-gray-200 rounded-md touch-manipulation"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                />
-                <button
-                  type="button"
-                  onClick={() => handleRemoveItem(vendorIndex, itemIndex)}
-                  className="min-h-[44px] px-3 py-2 text-sm sm:text-xs rounded-md border border-red-600 text-red-600 active:bg-red-50 touch-manipulation whitespace-nowrap"
-                >
-                  削除
-                </button>
+          {!isCollapsed && (
+          <>
+          {vendor.items.map((item, itemIndex) => {
+            const recipeKey = `${vendorIndex}-${itemIndex}`
+            const isRecipeOpen = recipeOpenKey === recipeKey
+            const recipe = item.recipe ?? defaultRecipe()
+            return (
+              <div key={itemIndex} className="mb-2 sm:mb-1.5">
+                <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
+                  <input
+                    type="text"
+                    value={item.name}
+                    onChange={(e) => handleItemChange(vendorIndex, itemIndex, 'name', e.target.value)}
+                    placeholder="品目名"
+                    className="flex-1 min-w-0 min-h-[44px] px-3 py-2 text-base sm:text-sm border border-gray-200 rounded-md touch-manipulation"
+                  />
+                  <div className="flex gap-2 flex-wrap">
+                    <input
+                      type="text"
+                      value={item.unit}
+                      onChange={(e) => handleItemChange(vendorIndex, itemIndex, 'unit', e.target.value)}
+                      placeholder="単位"
+                      className="w-[80px] sm:w-[60px] min-h-[44px] px-2 py-2 text-base sm:text-sm border border-gray-200 rounded-md touch-manipulation"
+                    />
+                    <input
+                      type="number"
+                      value={item.price}
+                      onChange={(e) => handleItemChange(vendorIndex, itemIndex, 'price', parseFloat(e.target.value) || 0)}
+                      placeholder="単価"
+                      className="w-[100px] sm:w-[70px] min-h-[44px] px-2 py-2 text-base sm:text-sm border border-gray-200 rounded-md touch-manipulation"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => toggleRecipe(recipeKey)}
+                      className="min-h-[44px] px-3 py-2 text-sm sm:text-xs rounded-md border border-blue-600 text-blue-600 active:bg-blue-50 touch-manipulation whitespace-nowrap"
+                    >
+                      {isRecipeOpen ? 'レシピを閉じる' : 'レシピを編集'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveItem(vendorIndex, itemIndex)}
+                      className="min-h-[44px] px-3 py-2 text-sm sm:text-xs rounded-md border border-red-600 text-red-600 active:bg-red-50 touch-manipulation whitespace-nowrap"
+                    >
+                      削除
+                    </button>
+                  </div>
+                </div>
+                {isRecipeOpen && (
+                  <div className="mt-2 ml-0 sm:ml-2 p-3 bg-white border border-gray-200 rounded-md space-y-3">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-600 mb-1">材料（1行1項目）</label>
+                      <textarea
+                        value={(recipe.ingredients ?? []).join('\n')}
+                        onChange={(e) => handleRecipeChange(vendorIndex, itemIndex, { ...recipe, ingredients: e.target.value.split('\n').map(s => s.trim()).filter(Boolean) })}
+                        placeholder={'玉ねぎ 1個\nにんじん 1本'}
+                        className="w-full min-h-[80px] px-3 py-2 text-base border border-gray-200 rounded-md touch-manipulation"
+                        rows={3}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-600 mb-1">手順（1行1項目）</label>
+                      <textarea
+                        value={(recipe.steps ?? []).join('\n')}
+                        onChange={(e) => handleRecipeChange(vendorIndex, itemIndex, { ...recipe, steps: e.target.value.split('\n').map(s => s.trim()).filter(Boolean) })}
+                        placeholder={'野菜を切る\n炒める'}
+                        className="w-full min-h-[80px] px-3 py-2 text-base border border-gray-200 rounded-md touch-manipulation"
+                        rows={3}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-600 mb-1">ポイント</label>
+                      <textarea
+                        value={recipe.points ?? ''}
+                        onChange={(e) => handleRecipeChange(vendorIndex, itemIndex, { ...recipe, points: e.target.value })}
+                        placeholder="火を通しすぎない"
+                        className="w-full min-h-[60px] px-3 py-2 text-base border border-gray-200 rounded-md touch-manipulation"
+                        rows={2}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-gray-600 mb-1">目安所要時間（分）</label>
+                      <input
+                        type="number"
+                        value={recipe.estimatedMinutes ?? ''}
+                        onChange={(e) => handleRecipeChange(vendorIndex, itemIndex, { ...recipe, estimatedMinutes: e.target.value === '' ? undefined : parseInt(e.target.value, 10) || 0 })}
+                        placeholder="15"
+                        min={0}
+                        className="w-[100px] min-h-[44px] px-3 py-2 text-base border border-gray-200 rounded-md touch-manipulation"
+                        inputMode="numeric"
+                      />
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-          ))}
+            )
+          })}
 
           <div className="mt-2">
             <textarea
@@ -201,8 +300,11 @@ export function MasterEditor() {
           >
             ＋ 品目を追加
           </button>
+          </>
+          )}
         </div>
-      ))}
+        )
+      })}
 
       <button
         type="button"

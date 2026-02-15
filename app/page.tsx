@@ -7,11 +7,12 @@ import { VendorList } from '@/components/VendorList'
 import { ItemCard } from '@/components/ItemCard'
 import { SettingsForm } from '@/components/SettingsForm'
 import { SummaryList } from '@/components/SummaryList'
+import { PrepList } from '@/components/PrepList'
 import { useApp } from '@/contexts/AppContext'
 import { useRealtime } from '@/hooks/useRealtime'
 import { useOrders } from '@/hooks/useOrders'
 
-type Tab = 'main' | 'list' | 'settings'
+type Tab = 'main' | 'prep' | 'list' | 'settings'
 
 export default function Home() {
   const [currentTab, setCurrentTab] = useState<Tab>('main')
@@ -43,7 +44,7 @@ export default function Home() {
       {currentTab === 'main' && (
         <main className="grid grid-cols-[200px_1fr] min-h-[calc(100vh-180px)] md:grid-cols-[200px_1fr] max-md:grid-cols-1">
           <VendorList />
-          <div className="p-3 sm:p-4 overflow-y-auto bg-gray-50 overscroll-contain">
+          <div className="p-3 sm:p-4 bg-gray-50 min-h-0">
             <h2 className="mt-0 mb-3 sm:mb-4 text-lg sm:text-xl font-bold">
               {currentVendorData ? currentVendorData.name : '業者を選択'}
             </h2>
@@ -59,6 +60,12 @@ export default function Home() {
               </div>
             )}
           </div>
+        </main>
+      )}
+
+      {currentTab === 'prep' && (
+        <main className="p-3 sm:p-5 pb-20 sm:pb-5">
+          <PrepList />
         </main>
       )}
 

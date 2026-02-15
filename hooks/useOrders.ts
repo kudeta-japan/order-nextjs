@@ -41,6 +41,8 @@ export function useOrders() {
         item: order.item,
         qty: order.qty,
         stock: order.stock,
+        prep: order.prep ?? 0,
+        prep_checked: order.prep_checked ?? false,
         updated_at: order.updated_at,
         updated_by: order.updated_by || config.staff,
         store_id: order.store_id || config.storeId || 'default',
