@@ -8,11 +8,13 @@ import type { Item } from '@/lib/types'
 interface ItemCardProps {
   vendor: string
   item: Item
+  /** 全ての業者表示時に業者名を表示する */
+  showVendorLabel?: boolean
   /** カテゴリー色分け用の左ボーダークラス（例: border-l-4 border-l-green-500） */
   categoryBorderClass?: string
 }
 
-export function ItemCard({ vendor, item, categoryBorderClass }: ItemCardProps) {
+export function ItemCard({ vendor, item, showVendorLabel, categoryBorderClass }: ItemCardProps) {
   const {
     currentDate,
     config,
@@ -89,6 +91,9 @@ export function ItemCard({ vendor, item, categoryBorderClass }: ItemCardProps) {
       } ${categoryBorderClass ?? ''}`}
     >
       <div className="flex-1 min-w-0">
+        {showVendorLabel && (
+          <div className="text-xs text-gray-500 mb-0.5 truncate">{vendor}</div>
+        )}
         <div className="font-bold text-base sm:text-lg mb-2 truncate">{item.name}</div>
         <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 mt-2">
           <div className="flex items-center gap-2 flex-shrink-0 whitespace-nowrap">

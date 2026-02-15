@@ -53,3 +53,6 @@ export interface Master {
 }
 
 export type SyncStatus = 'ready' | 'syncing' | 'saved' | 'offline' | 'conflict';
+
+/** 左サイドで「全ての業者」を選んだときの currentVendor の値 */
+export const ALL_VENDORS_KEY = '__all__' as const

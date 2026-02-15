@@ -12,6 +12,7 @@ import { useApp } from '@/contexts/AppContext'
 import { useRealtime } from '@/hooks/useRealtime'
 import { useOrders } from '@/hooks/useOrders'
 import type { Item } from '@/lib/types'
+import { ALL_VENDORS_KEY } from '@/lib/types'
 
 type Tab = 'main' | 'prep' | 'list' | 'settings'
 
@@ -59,10 +60,23 @@ export default function Home() {
   }, [currentDate, getOrdersByDate, setOrders])
 
   const currentVendorData = master.vendors.find(v => v.name === currentVendor)
+  const isAllVendors = currentVendor === ALL_VENDORS_KEY
 
-  const { filteredItems, categoriesForFilter } = useMemo(() => {
+  /** 全ての業者時: { vendor, item }[]。単一業者時: null（filteredItems は Item[] で別計算） */
+  const { filteredItemsAll, filteredItemsSingle, categoriesForFilter } = useMemo(() => {
+    if (isAllVendors) {
+      const allEntries: { vendor: string; item: Item }[] = master.vendors.flatMap(v =>
+        v.items.map(item => ({ vendor: v.name, item }))
+      )
+      const categories = Array.from(new Set(allEntries.map(e => e.item.category?.trim() || '未設定')))
+      const sortedCategories = [...categories].sort((a, b) => (a === '未設定' ? 1 : b === '未設定' ? -1 : a.localeCompare(b)))
+      const filtered = categoryFilter === ''
+        ? allEntries
+        : allEntries.filter(e => (e.item.category?.trim() || '未設定') === categoryFilter)
+      return { filteredItemsAll: filtered, filteredItemsSingle: null, categoriesForFilter: sortedCategories }
+    }
     if (!currentVendorData) {
-      return { filteredItems: [], categoriesForFilter: [] as string[] }
+      return { filteredItemsAll: [], filteredItemsSingle: null, categoriesForFilter: [] as string[] }
     }
     const items = currentVendorData.items
     const categories = Array.from(new Set(items.map(i => i.category?.trim() || '未設定')))
@@ -70,8 +84,8 @@ export default function Home() {
     const filtered = categoryFilter === ''
       ? items
       : items.filter(i => (i.category?.trim() || '未設定') === categoryFilter)
-    return { filteredItems: filtered, categoriesForFilter: sortedCategories }
-  }, [currentVendorData, categoryFilter])
+    return { filteredItemsAll: null, filteredItemsSingle: filtered, categoriesForFilter: sortedCategories }
+  }, [isAllVendors, currentVendorData, master.vendors, categoryFilter])
 
   const categoryOrder = useMemo(() => master.categories ?? [], [master.categories])
 
@@ -80,13 +94,13 @@ export default function Home() {
       <Header />
 
       {currentTab === 'main' && (
-        <main className="grid grid-cols-[200px_1fr] min-h-[calc(100vh-180px)] md:grid-cols-[200px_1fr] max-md:grid-cols-1">
+        <main className="grid grid-cols-[200px_1fr] min-h-[calc(100vh-180px)] max-md:grid-cols-1">
           <VendorList />
           <div className="p-3 sm:p-4 bg-gray-50 min-h-0">
             <h2 className="mt-0 mb-3 sm:mb-4 text-lg sm:text-xl font-bold">
-              {currentVendorData ? currentVendorData.name : '業者を選択'}
+              {isAllVendors ? '全ての業者' : currentVendorData ? currentVendorData.name : '業者を選択'}
             </h2>
-            {currentVendorData && (
+            {(isAllVendors || currentVendorData) && (
               <>
                 <div className="mb-3 flex flex-wrap items-center gap-2">
                   <span className="text-sm text-gray-600">カテゴリー:</span>
@@ -113,14 +127,24 @@ export default function Home() {
                   ))}
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-3">
-                  {filteredItems.map((item) => (
-                    <ItemCard
-                      key={item.name}
-                      vendor={currentVendorData.name}
-                      item={item}
-                      categoryBorderClass={getCategoryBorderClass(item.category?.trim() || '未設定', categoryOrder)}
-                    />
-                  ))}
+                  {isAllVendors && filteredItemsAll
+                    ? filteredItemsAll.map(({ vendor, item }) => (
+                        <ItemCard
+                          key={`${vendor}-${item.name}`}
+                          vendor={vendor}
+                          item={item}
+                          showVendorLabel
+                          categoryBorderClass={getCategoryBorderClass(item.category?.trim() || '未設定', categoryOrder)}
+                        />
+                      ))
+                    : filteredItemsSingle?.map((item) => (
+                        <ItemCard
+                          key={item.name}
+                          vendor={currentVendorData!.name}
+                          item={item}
+                          categoryBorderClass={getCategoryBorderClass(item.category?.trim() || '未設定', categoryOrder)}
+                        />
+                      ))}
                 </div>
               </>
             )}
