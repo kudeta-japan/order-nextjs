@@ -15,23 +15,25 @@ import type { Item } from '@/lib/types'
 
 type Tab = 'main' | 'prep' | 'list' | 'settings'
 
-/** 品目をカテゴリーでグループ化（未設定は最後） */
-function groupItemsByCategory(items: Item[]): { categoryLabel: string; items: Item[] }[] {
-  const map = new Map<string, Item[]>()
-  for (const item of items) {
-    const key = item.category?.trim() || '未設定'
-    if (!map.has(key)) map.set(key, [])
-    map.get(key)!.push(item)
-  }
-  const sortedKeys = Array.from(map.keys()).sort((a, b) => {
-    if (a === '未設定') return 1
-    if (b === '未設定') return -1
-    return a.localeCompare(b)
-  })
-  return sortedKeys.map(categoryLabel => ({
-    categoryLabel,
-    items: map.get(categoryLabel)!,
-  }))
+/** カテゴリーごとの左ボーダー色（発注カードの色分け用） */
+const CATEGORY_BORDER_COLORS = [
+  'border-l-4 border-l-green-500',
+  'border-l-4 border-l-blue-500',
+  'border-l-4 border-l-amber-500',
+  'border-l-4 border-l-violet-500',
+  'border-l-4 border-l-rose-400',
+  'border-l-4 border-l-sky-500',
+  'border-l-4 border-l-emerald-500',
+  'border-l-4 border-l-orange-400',
+  'border-l-4 border-l-teal-500',
+  'border-l-4 border-l-fuchsia-400',
+]
+
+function getCategoryBorderClass(categoryLabel: string, categoryOrder: string[]): string {
+  if (!categoryLabel || categoryLabel === '未設定') return 'border-l-4 border-l-gray-300'
+  const index = categoryOrder.indexOf(categoryLabel)
+  if (index < 0) return 'border-l-4 border-l-gray-300'
+  return CATEGORY_BORDER_COLORS[index % CATEGORY_BORDER_COLORS.length] ?? 'border-l-4 border-l-gray-300'
 }
 
 export default function Home() {
@@ -71,7 +73,7 @@ export default function Home() {
     return { filteredItems: filtered, categoriesForFilter: sortedCategories }
   }, [currentVendorData, categoryFilter])
 
-  const groupedForDisplay = useMemo(() => groupItemsByCategory(filteredItems), [filteredItems])
+  const categoryOrder = useMemo(() => master.categories ?? [], [master.categories])
 
   return (
     <div className="min-h-screen pb-[max(60px,calc(60px+env(safe-area-inset-bottom)))]">
@@ -110,22 +112,14 @@ export default function Home() {
                     </button>
                   ))}
                 </div>
-                <div className="space-y-6">
-                  {groupedForDisplay.map(({ categoryLabel, items: groupItems }) => (
-                    <section key={categoryLabel}>
-                      <h3 className="text-sm font-bold text-gray-600 mb-2 sticky top-0 bg-gray-50 py-1 z-10">
-                        {categoryLabel}
-                      </h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-3">
-                        {groupItems.map((item) => (
-                          <ItemCard
-                            key={item.name}
-                            vendor={currentVendorData.name}
-                            item={item}
-                          />
-                        ))}
-                      </div>
-                    </section>
+                <div className="grid grid-cols-1 sm:grid-cols-[repeat(auto-fill,minmax(280px,1fr))] gap-3">
+                  {filteredItems.map((item) => (
+                    <ItemCard
+                      key={item.name}
+                      vendor={currentVendorData.name}
+                      item={item}
+                      categoryBorderClass={getCategoryBorderClass(item.category?.trim() || '未設定', categoryOrder)}
+                    />
                   ))}
                 </div>
               </>

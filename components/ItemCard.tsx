@@ -8,9 +8,11 @@ import type { Item } from '@/lib/types'
 interface ItemCardProps {
   vendor: string
   item: Item
+  /** カテゴリー色分け用の左ボーダークラス（例: border-l-4 border-l-green-500） */
+  categoryBorderClass?: string
 }
 
-export function ItemCard({ vendor, item }: ItemCardProps) {
+export function ItemCard({ vendor, item, categoryBorderClass }: ItemCardProps) {
   const {
     currentDate,
     config,
@@ -84,7 +86,7 @@ export function ItemCard({ vendor, item }: ItemCardProps) {
     <div
       className={`bg-white p-3 sm:p-4 rounded-xl border shadow-sm flex justify-between items-start gap-3 ${
         qty > 0 ? 'border-green-500 bg-green-50' : 'border-gray-200'
-      }`}
+      } ${categoryBorderClass ?? ''}`}
     >
       <div className="flex-1 min-w-0">
         <div className="font-bold text-base sm:text-lg mb-2 truncate">{item.name}</div>
