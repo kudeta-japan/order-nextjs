@@ -2,19 +2,22 @@
 
 import { useState, useEffect } from 'react'
 import { useApp } from '@/contexts/AppContext'
+import { DEFAULT_CATEGORIES } from '@/lib/storage'
 import type { Vendor, Item, Recipe } from '@/lib/types'
 
 function defaultRecipe(): Recipe {
   return { ingredients: [], steps: [], points: '', estimatedMinutes: undefined }
 }
 
-const CATEGORY_OPTIONS = ['', '野菜', '果物', '乳製品', '肉・魚', '調味料', 'その他']
-
 export function MasterEditor() {
   const { master, setMaster } = useApp()
   const [vendors, setVendors] = useState<Vendor[]>(master.vendors)
+  const [categories, setCategoriesState] = useState<string[]>(master.categories ?? DEFAULT_CATEGORIES)
   const [recipeOpenKey, setRecipeOpenKey] = useState<string | null>(null)
   const [collapsedVendors, setCollapsedVendors] = useState<Set<number>>(new Set())
+  const [prepRecipeCollapsed, setPrepRecipeCollapsed] = useState(false)
+
+  const categoryOptions = ['', ...categories.filter(Boolean)]
 
   const toggleVendorCollapse = (vendorIndex: number) => {
     setCollapsedVendors(prev => {
@@ -27,7 +30,27 @@ export function MasterEditor() {
 
   useEffect(() => {
     setVendors(master.vendors)
+    setCategoriesState(master.categories ?? DEFAULT_CATEGORIES)
   }, [master])
+
+  const setCategories = (newCategories: string[]) => {
+    setCategoriesState(newCategories)
+    setMaster({ ...master, categories: newCategories })
+  }
+
+  const handleCategoryChange = (index: number, value: string) => {
+    const updated = [...categories]
+    updated[index] = value.trim()
+    setCategories(updated)
+  }
+
+  const handleAddCategory = () => {
+    setCategories([...categories, ''])
+  }
+
+  const handleRemoveCategory = (index: number) => {
+    setCategories(categories.filter((_, i) => i !== index))
+  }
 
   const handleVendorNameChange = (index: number, name: string) => {
     const updated = [...vendors]
@@ -88,7 +111,7 @@ export function MasterEditor() {
   }
 
   const handleSave = () => {
-    setMaster({ vendors })
+    setMaster({ ...master, vendors })
   }
 
   const handleFileImport = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -111,7 +134,7 @@ export function MasterEditor() {
             })),
           }))
           setVendors(imported)
-          setMaster({ vendors: imported })
+          setMaster({ ...master, vendors: imported })
           alert('マスタデータを読み込みました')
         } else {
           alert('JSON形式が正しくありません')
@@ -126,7 +149,7 @@ export function MasterEditor() {
   // 自動保存
   useEffect(() => {
     const timer = setTimeout(() => {
-      setMaster({ vendors })
+      setMaster({ ...master, vendors })
     }, 500)
     return () => clearTimeout(timer)
   }, [vendors, setMaster])
@@ -137,6 +160,40 @@ export function MasterEditor() {
       <p className="text-xs text-gray-500 mb-2.5">
         業者を追加し、各業者の品目（名前と単位）を登録できます。
       </p>
+
+      <div className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-lg">
+        <h5 className="text-sm font-bold mb-2">カテゴリー一覧</h5>
+        <p className="text-xs text-gray-500 mb-2">
+          発注タブのグループ表示・フィルターと、品目に選べるカテゴリーです。自由に追加・編集・削除できます。
+        </p>
+        <ul className="list-none p-0 m-0 space-y-2 mb-2">
+          {categories.map((cat, index) => (
+            <li key={index} className="flex gap-2 items-center">
+              <input
+                type="text"
+                value={cat}
+                onChange={(e) => handleCategoryChange(index, e.target.value)}
+                placeholder="例: 飲料"
+                className="flex-1 min-h-[40px] px-3 py-2 text-sm border border-gray-200 rounded-md bg-white"
+              />
+              <button
+                type="button"
+                onClick={() => handleRemoveCategory(index)}
+                className="min-h-[40px] px-3 py-2 text-sm rounded-md border border-red-600 text-red-600 active:bg-red-50 whitespace-nowrap"
+              >
+                削除
+              </button>
+            </li>
+          ))}
+        </ul>
+        <button
+          type="button"
+          onClick={handleAddCategory}
+          className="min-h-[40px] px-3 py-2 text-sm rounded-md border border-gray-200 bg-white active:bg-gray-50"
+        >
+          ＋ カテゴリーを追加
+        </button>
+      </div>
 
       <div className="mb-3">
         <label className="block text-xs sm:text-sm font-bold mb-1">
@@ -194,14 +251,15 @@ export function MasterEditor() {
                 placeholder="品目名"
                 className="flex-1 min-w-0 min-h-[44px] px-3 py-2 text-base sm:text-sm border border-gray-200 rounded-md touch-manipulation"
               />
+              <span className="text-xs text-gray-600 whitespace-nowrap self-center">カテゴリー</span>
               <select
                 value={item.category ?? ''}
                 onChange={(e) => handleItemChange(vendorIndex, itemIndex, 'category', e.target.value || undefined)}
                 className="w-[100px] sm:w-[88px] min-h-[44px] px-2 py-2 text-base sm:text-sm border border-gray-200 rounded-md touch-manipulation bg-white"
-                title="カテゴリー"
+                title="カテゴリー（発注タブでグループ表示・フィルターに使います）"
               >
-                {CATEGORY_OPTIONS.map(opt => (
-                  <option key={opt} value={opt}>{opt || '未設定'}</option>
+                {categoryOptions.map(opt => (
+                  <option key={opt || '__未設定__'} value={opt}>{opt || '未設定'}</option>
                 ))}
               </select>
               <div className="flex gap-2 flex-wrap">
@@ -271,11 +329,23 @@ export function MasterEditor() {
 
       {/* 仕込みレシピ（仕込みタブ用） */}
       <div className="mt-10 pt-6 border-t-2 border-gray-200">
-        <h4 className="text-sm font-bold mb-1">仕込みレシピ</h4>
-        <p className="text-xs text-gray-500 mb-4">
-          仕込みタブで行をタップしたときに表示するレシピを、品目ごとに設定できます。
-        </p>
-        {vendors.map((vendor, vendorIndex) => (
+        <div className="flex items-center gap-2 mb-2">
+          <button
+            type="button"
+            onClick={() => setPrepRecipeCollapsed(c => !c)}
+            className="flex-shrink-0 w-9 h-9 rounded-md border border-gray-300 bg-white flex items-center justify-center active:bg-gray-100 touch-manipulation text-gray-600"
+            aria-label={prepRecipeCollapsed ? '展開する' : '折りたたむ'}
+          >
+            <span className="text-lg leading-none">{prepRecipeCollapsed ? '▶' : '▼'}</span>
+          </button>
+          <div>
+            <h4 className="text-sm font-bold mt-0 mb-0">仕込みレシピ</h4>
+            <p className="text-xs text-gray-500 mt-0.5 mb-0">
+              仕込みタブで行をタップしたときに表示するレシピを、品目ごとに設定できます。
+            </p>
+          </div>
+        </div>
+        {!prepRecipeCollapsed && vendors.map((vendor, vendorIndex) => (
           <div key={vendorIndex} className="mb-4">
             <div className="text-xs font-bold text-gray-600 mb-2">{vendor.name || '（業者名未設定）'}</div>
             <ul className="list-none p-0 m-0 space-y-2">

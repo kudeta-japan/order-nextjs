@@ -4,12 +4,15 @@ const ORDER_HISTORY_KEY = 'order_history_v5'
 
 const STORE_ID = 'default'
 
+export const DEFAULT_CATEGORIES = ['野菜', '果物', '乳製品', '肉・魚', '調味料', 'その他']
+
 export const DEFAULT_MASTER: Master = {
   vendors: [
     { name: '大光', items: [{ name: 'バター', unit: 'kg', price: 0 }, { name: '牛乳', unit: '本', price: 0 }] },
     { name: '高瀬', items: [{ name: 'キャベツ', unit: '玉', price: 0 }, { name: 'レタス', unit: '玉', price: 0 }] },
     { name: '安田青果', items: [{ name: '玉ねぎ', unit: 'kg', price: 0 }] }
-  ]
+  ],
+  categories: [...DEFAULT_CATEGORIES],
 }
 
 export function loadMaster(): Master {
@@ -26,6 +29,7 @@ export function loadMaster(): Master {
           if (typeof it.price !== 'number') it.price = 0
         })
       })
+      if (!Array.isArray(parsed.categories)) parsed.categories = [...DEFAULT_CATEGORIES]
       return parsed
     }
   } catch (_) {}

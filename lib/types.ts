@@ -48,6 +48,8 @@ export interface OrderHistoryEntry {
 
 export interface Master {
   vendors: Vendor[];
+  /** カテゴリー一覧（発注のグループ・フィルターと品目で選択する候補） */
+  categories?: string[];
 }
 
 export type SyncStatus = 'ready' | 'syncing' | 'saved' | 'offline' | 'conflict';
