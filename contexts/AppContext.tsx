@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import type { Order, Master, Config, SyncStatus } from '@/lib/types'
 import { loadMaster, persistMaster, loadConfig, persistConfig, migrateV4ToV5, DEFAULT_MASTER } from '@/lib/storage'
+import { fetchStoreData, upsertStoreData } from '@/lib/storeData'
 
 interface AppContextType {
   orders: Order[]
@@ -47,17 +48,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   })
   const [syncStatus, setSyncStatus] = useState<SyncStatus>('ready')
 
-  // Master の永続化
+  // Master の永続化（localStorage + Supabase）
   const setMaster = useCallback((newMaster: Master) => {
     setMasterState(newMaster)
     persistMaster(newMaster)
-  }, [])
+    upsertStoreData(config.storeId, newMaster, config).catch(() => {})
+  }, [config])
 
-  // Config の永続化
+  // Config の永続化（localStorage + Supabase）
   const setConfig = useCallback((newConfig: Config) => {
     setConfigState(newConfig)
     persistConfig(newConfig)
-  }, [])
+    upsertStoreData(newConfig.storeId, master, newConfig).catch(() => {})
+  }, [master])
 
   // Order の更新（既存のものを更新、なければ追加）
   const updateOrder = useCallback((order: Order) => {
@@ -82,13 +85,29 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setOrders(prev => prev.filter(o => o.id !== orderId))
   }, [])
 
-  // 初回マスタ読み込み
+  // 初回マスタ読み込み（Supabase にあればそれを採用、なければ localStorage）
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      migrateV4ToV5()
+    if (typeof window === 'undefined') return
+    migrateV4ToV5()
+    const localConfig = loadConfig()
+    const storeId = localConfig.storeId || 'default'
+
+    fetchStoreData(storeId).then((data) => {
+      if (data) {
+        setMasterState(data.master)
+        setConfigState(data.config)
+        persistMaster(data.master)
+        persistConfig(data.config)
+      } else {
+        const localMaster = loadMaster()
+        setMasterState(localMaster)
+        setConfigState(localConfig)
+        upsertStoreData(storeId, localMaster, localConfig).catch(() => {})
+      }
+    }).catch(() => {
       setMasterState(loadMaster())
-      setConfigState(loadConfig())
-    }
+      setConfigState(localConfig)
+    })
   }, [])
 
   // 初回業者選択
