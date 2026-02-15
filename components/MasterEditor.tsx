@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useApp } from '@/contexts/AppContext'
 import { DEFAULT_CATEGORIES } from '@/lib/storage'
-import { CATEGORY_COLOR_OPTIONS } from '@/lib/categoryColors'
+import { CATEGORY_COLOR_OPTIONS, getCategoryBorderClass } from '@/lib/categoryColors'
 import type { Vendor, Item, Recipe } from '@/lib/types'
 
 function defaultRecipe(): Recipe {
@@ -179,38 +179,47 @@ export function MasterEditor() {
           発注タブのグループ表示・フィルターと、品目に選べるカテゴリーです。色は発注カードの左ボーダーに反映されます。
         </p>
         <ul className="list-none p-0 m-0 space-y-2 mb-2">
-          {categories.map((cat, index) => (
-            <li key={index} className="flex flex-wrap gap-2 items-center">
-              <input
-                type="text"
-                value={cat}
-                onChange={(e) => handleCategoryChange(index, e.target.value)}
-                placeholder="例: 飲料"
-                className="flex-1 min-w-[100px] min-h-[40px] px-3 py-2 text-sm border border-gray-200 rounded-md bg-white"
-              />
-              <select
-                value={cat ? (master.categoryColors?.[cat] ?? '') : ''}
-                onChange={(e) => cat && handleCategoryColorChange(cat, e.target.value)}
-                disabled={!cat.trim()}
-                className="min-h-[40px] pl-2 pr-8 py-2 text-sm border border-gray-200 rounded-md bg-white disabled:opacity-60"
-                title="発注タブで表示する色"
-              >
-                <option value="">自動</option>
-                {CATEGORY_COLOR_OPTIONS.map((opt) => (
-                  <option key={opt.key} value={opt.key}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-              <button
-                type="button"
-                onClick={() => handleRemoveCategory(index)}
-                className="min-h-[40px] px-3 py-2 text-sm rounded-md border border-red-600 text-red-600 active:bg-red-50 whitespace-nowrap"
-              >
-                削除
-              </button>
-            </li>
-          ))}
+          {categories.map((cat, index) => {
+            const selectedColorKey = cat ? (master.categoryColors?.[cat] ?? '') : ''
+            return (
+              <li key={index} className="flex flex-wrap gap-2 items-center">
+                <input
+                  type="text"
+                  value={cat}
+                  onChange={(e) => handleCategoryChange(index, e.target.value)}
+                  placeholder="例: 飲料"
+                  className="flex-1 min-w-[100px] min-h-[40px] px-3 py-2 text-sm border border-gray-200 rounded-md bg-white"
+                />
+                <div className="flex items-center gap-1" title="発注タブで表示する色">
+                  <button
+                    type="button"
+                    onClick={() => cat && handleCategoryColorChange(cat, '')}
+                    disabled={!cat.trim()}
+                    className={`w-8 h-8 rounded-md border-2 shrink-0 ${selectedColorKey === '' ? 'border-gray-400 ring-2 ring-gray-300' : 'border-gray-200'}`}
+                    style={{ background: 'linear-gradient(135deg, #e5e7eb 50%, #d1d5db 50%)' }}
+                    aria-label="自動"
+                  />
+                  {CATEGORY_COLOR_OPTIONS.map((opt) => (
+                    <button
+                      key={opt.key}
+                      type="button"
+                      onClick={() => cat && handleCategoryColorChange(cat, opt.key)}
+                      disabled={!cat.trim()}
+                      className={`w-8 h-8 rounded-md border-2 shrink-0 ${opt.bgClass} ${selectedColorKey === opt.key ? 'ring-2 ring-offset-1 ring-gray-500' : 'border-gray-200'}`}
+                      aria-label={opt.label}
+                    />
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleRemoveCategory(index)}
+                  className="min-h-[40px] px-3 py-2 text-sm rounded-md border border-red-600 text-red-600 active:bg-red-50 whitespace-nowrap"
+                >
+                  削除
+                </button>
+              </li>
+            )
+          })}
         </ul>
         <button
           type="button"
@@ -268,8 +277,12 @@ export function MasterEditor() {
 
           {!isCollapsed && (
           <>
-          {vendor.items.map((item, itemIndex) => (
-            <div key={itemIndex} className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center mb-2 sm:mb-1.5">
+          {vendor.items.map((item, itemIndex) => {
+            const categoryOrder = master.categories ?? []
+            const itemCategory = item.category?.trim() || '未設定'
+            const rowBorderClass = getCategoryBorderClass(itemCategory, categoryOrder, master.categoryColors)
+            return (
+            <div key={itemIndex} className={`flex flex-col sm:flex-row gap-2 items-stretch sm:items-center mb-2 sm:mb-1.5 rounded-r-md ${rowBorderClass} pl-2 py-1 -ml-2`}>
               <input
                 type="text"
                 value={item.name}
@@ -313,7 +326,8 @@ export function MasterEditor() {
                 </button>
               </div>
             </div>
-          ))}
+            )
+          })}
 
           <div className="mt-2">
             <textarea
