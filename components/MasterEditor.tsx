@@ -8,6 +8,8 @@ function defaultRecipe(): Recipe {
   return { ingredients: [], steps: [], points: '', estimatedMinutes: undefined }
 }
 
+const CATEGORY_OPTIONS = ['', '野菜', '果物', '乳製品', '肉・魚', '調味料', 'その他']
+
 export function MasterEditor() {
   const { master, setMaster } = useApp()
   const [vendors, setVendors] = useState<Vendor[]>(master.vendors)
@@ -47,7 +49,7 @@ export function MasterEditor() {
 
   const handleAddItem = (vendorIndex: number) => {
     const updated = [...vendors]
-    updated[vendorIndex].items.push({ name: '', unit: '', price: 0 })
+    updated[vendorIndex].items.push({ name: '', unit: '', price: 0, category: undefined })
     setVendors(updated)
   }
 
@@ -77,6 +79,7 @@ export function MasterEditor() {
         name: parts[0] || '',
         unit: parts[1] || '',
         price: parseFloat(parts[2]) || 0,
+        category: undefined,
       }
     })
     const updated = [...vendors]
@@ -103,6 +106,8 @@ export function MasterEditor() {
               name: it.name || '',
               unit: it.unit || '',
               price: typeof it.price === 'number' ? it.price : 0,
+              category: typeof it.category === 'string' ? it.category : undefined,
+              recipe: it.recipe,
             })),
           }))
           setVendors(imported)
@@ -189,6 +194,16 @@ export function MasterEditor() {
                 placeholder="品目名"
                 className="flex-1 min-w-0 min-h-[44px] px-3 py-2 text-base sm:text-sm border border-gray-200 rounded-md touch-manipulation"
               />
+              <select
+                value={item.category ?? ''}
+                onChange={(e) => handleItemChange(vendorIndex, itemIndex, 'category', e.target.value || undefined)}
+                className="w-[100px] sm:w-[88px] min-h-[44px] px-2 py-2 text-base sm:text-sm border border-gray-200 rounded-md touch-manipulation bg-white"
+                title="カテゴリー"
+              >
+                {CATEGORY_OPTIONS.map(opt => (
+                  <option key={opt} value={opt}>{opt || '未設定'}</option>
+                ))}
+              </select>
               <div className="flex gap-2 flex-wrap">
                 <input
                   type="text"

@@ -29,6 +29,8 @@ export interface Item {
   name: string;
   unit: string;
   price: number;
+  /** カテゴリー（野菜・乳製品など）。発注でグループ表示・フィルターに利用 */
+  category?: string;
   recipe?: Recipe;
 }
 
