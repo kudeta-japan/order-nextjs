@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useApp } from '@/contexts/AppContext'
 import { DEFAULT_CATEGORIES } from '@/lib/storage'
+import { CATEGORY_COLOR_OPTIONS } from '@/lib/categoryColors'
 import type { Vendor, Item, Recipe } from '@/lib/types'
 
 function defaultRecipe(): Recipe {
@@ -49,7 +50,18 @@ export function MasterEditor() {
   }
 
   const handleRemoveCategory = (index: number) => {
-    setCategories(categories.filter((_, i) => i !== index))
+    const removedName = categories[index]
+    const newCategories = categories.filter((_, i) => i !== index)
+    setCategories(newCategories)
+    if (removedName && master.categoryColors?.[removedName]) {
+      const { [removedName]: _, ...rest } = master.categoryColors
+      setMaster({ ...master, categoryColors: Object.keys(rest).length ? rest : undefined })
+    }
+  }
+
+  const handleCategoryColorChange = (categoryName: string, colorKey: string) => {
+    const next = { ...(master.categoryColors ?? {}), [categoryName]: colorKey }
+    setMaster({ ...master, categoryColors: next })
   }
 
   const handleVendorNameChange = (index: number, name: string) => {
@@ -164,18 +176,32 @@ export function MasterEditor() {
       <div className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-lg">
         <h5 className="text-sm font-bold mb-2">カテゴリー一覧</h5>
         <p className="text-xs text-gray-500 mb-2">
-          発注タブのグループ表示・フィルターと、品目に選べるカテゴリーです。自由に追加・編集・削除できます。
+          発注タブのグループ表示・フィルターと、品目に選べるカテゴリーです。色は発注カードの左ボーダーに反映されます。
         </p>
         <ul className="list-none p-0 m-0 space-y-2 mb-2">
           {categories.map((cat, index) => (
-            <li key={index} className="flex gap-2 items-center">
+            <li key={index} className="flex flex-wrap gap-2 items-center">
               <input
                 type="text"
                 value={cat}
                 onChange={(e) => handleCategoryChange(index, e.target.value)}
                 placeholder="例: 飲料"
-                className="flex-1 min-h-[40px] px-3 py-2 text-sm border border-gray-200 rounded-md bg-white"
+                className="flex-1 min-w-[100px] min-h-[40px] px-3 py-2 text-sm border border-gray-200 rounded-md bg-white"
               />
+              <select
+                value={cat ? (master.categoryColors?.[cat] ?? '') : ''}
+                onChange={(e) => cat && handleCategoryColorChange(cat, e.target.value)}
+                disabled={!cat.trim()}
+                className="min-h-[40px] pl-2 pr-8 py-2 text-sm border border-gray-200 rounded-md bg-white disabled:opacity-60"
+                title="発注タブで表示する色"
+              >
+                <option value="">自動</option>
+                {CATEGORY_COLOR_OPTIONS.map((opt) => (
+                  <option key={opt.key} value={opt.key}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
               <button
                 type="button"
                 onClick={() => handleRemoveCategory(index)}

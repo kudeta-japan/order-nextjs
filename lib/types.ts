@@ -50,6 +50,8 @@ export interface Master {
   vendors: Vendor[];
   /** カテゴリー一覧（発注のグループ・フィルターと品目で選択する候補） */
   categories?: string[];
+  /** カテゴリー名 → 色キー（発注カードの左ボーダー色）。未設定は並び順で自動 */
+  categoryColors?: Record<string, string>;
 }
 
 export type SyncStatus = 'ready' | 'syncing' | 'saved' | 'offline' | 'conflict';

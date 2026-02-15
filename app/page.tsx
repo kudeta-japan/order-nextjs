@@ -13,29 +13,9 @@ import { useRealtime } from '@/hooks/useRealtime'
 import { useOrders } from '@/hooks/useOrders'
 import type { Item } from '@/lib/types'
 import { ALL_VENDORS_KEY } from '@/lib/types'
+import { getCategoryBorderClass } from '@/lib/categoryColors'
 
 type Tab = 'main' | 'prep' | 'list' | 'settings'
-
-/** カテゴリーごとの左ボーダー色（発注カードの色分け用） */
-const CATEGORY_BORDER_COLORS = [
-  'border-l-4 border-l-green-500',
-  'border-l-4 border-l-blue-500',
-  'border-l-4 border-l-amber-500',
-  'border-l-4 border-l-violet-500',
-  'border-l-4 border-l-rose-400',
-  'border-l-4 border-l-sky-500',
-  'border-l-4 border-l-emerald-500',
-  'border-l-4 border-l-orange-400',
-  'border-l-4 border-l-teal-500',
-  'border-l-4 border-l-fuchsia-400',
-]
-
-function getCategoryBorderClass(categoryLabel: string, categoryOrder: string[]): string {
-  if (!categoryLabel || categoryLabel === '未設定') return 'border-l-4 border-l-gray-300'
-  const index = categoryOrder.indexOf(categoryLabel)
-  if (index < 0) return 'border-l-4 border-l-gray-300'
-  return CATEGORY_BORDER_COLORS[index % CATEGORY_BORDER_COLORS.length] ?? 'border-l-4 border-l-gray-300'
-}
 
 export default function Home() {
   const [currentTab, setCurrentTab] = useState<Tab>('main')
@@ -134,7 +114,7 @@ export default function Home() {
                           vendor={vendor}
                           item={item}
                           showVendorLabel
-                          categoryBorderClass={getCategoryBorderClass(item.category?.trim() || '未設定', categoryOrder)}
+                          categoryBorderClass={getCategoryBorderClass(item.category?.trim() || '未設定', categoryOrder, master.categoryColors)}
                         />
                       ))
                     : filteredItemsSingle?.map((item) => (
@@ -142,7 +122,7 @@ export default function Home() {
                           key={item.name}
                           vendor={currentVendorData!.name}
                           item={item}
-                          categoryBorderClass={getCategoryBorderClass(item.category?.trim() || '未設定', categoryOrder)}
+                          categoryBorderClass={getCategoryBorderClass(item.category?.trim() || '未設定', categoryOrder, master.categoryColors)}
                         />
                       ))}
                 </div>
