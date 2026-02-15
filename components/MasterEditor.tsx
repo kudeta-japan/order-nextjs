@@ -180,102 +180,42 @@ export function MasterEditor() {
 
           {!isCollapsed && (
           <>
-          {vendor.items.map((item, itemIndex) => {
-            const recipeKey = `${vendorIndex}-${itemIndex}`
-            const isRecipeOpen = recipeOpenKey === recipeKey
-            const recipe = item.recipe ?? defaultRecipe()
-            return (
-              <div key={itemIndex} className="mb-2 sm:mb-1.5">
-                <div className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center">
-                  <input
-                    type="text"
-                    value={item.name}
-                    onChange={(e) => handleItemChange(vendorIndex, itemIndex, 'name', e.target.value)}
-                    placeholder="品目名"
-                    className="flex-1 min-w-0 min-h-[44px] px-3 py-2 text-base sm:text-sm border border-gray-200 rounded-md touch-manipulation"
-                  />
-                  <div className="flex gap-2 flex-wrap">
-                    <input
-                      type="text"
-                      value={item.unit}
-                      onChange={(e) => handleItemChange(vendorIndex, itemIndex, 'unit', e.target.value)}
-                      placeholder="単位"
-                      className="w-[80px] sm:w-[60px] min-h-[44px] px-2 py-2 text-base sm:text-sm border border-gray-200 rounded-md touch-manipulation"
-                    />
-                    <input
-                      type="number"
-                      value={item.price}
-                      onChange={(e) => handleItemChange(vendorIndex, itemIndex, 'price', parseFloat(e.target.value) || 0)}
-                      placeholder="単価"
-                      className="w-[100px] sm:w-[70px] min-h-[44px] px-2 py-2 text-base sm:text-sm border border-gray-200 rounded-md touch-manipulation"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => toggleRecipe(recipeKey)}
-                      className="min-h-[44px] px-3 py-2 text-sm sm:text-xs rounded-md border border-blue-600 text-blue-600 active:bg-blue-50 touch-manipulation whitespace-nowrap"
-                    >
-                      {isRecipeOpen ? 'レシピを閉じる' : 'レシピを編集'}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveItem(vendorIndex, itemIndex)}
-                      className="min-h-[44px] px-3 py-2 text-sm sm:text-xs rounded-md border border-red-600 text-red-600 active:bg-red-50 touch-manipulation whitespace-nowrap"
-                    >
-                      削除
-                    </button>
-                  </div>
-                </div>
-                {isRecipeOpen && (
-                  <div className="mt-2 ml-0 sm:ml-2 p-3 bg-white border border-gray-200 rounded-md space-y-3">
-                    <div>
-                      <label className="block text-xs font-bold text-gray-600 mb-1">材料（1行1項目）</label>
-                      <textarea
-                        value={(recipe.ingredients ?? []).join('\n')}
-                        onChange={(e) => handleRecipeChange(vendorIndex, itemIndex, { ...recipe, ingredients: e.target.value.split('\n').map(s => s.trim()).filter(Boolean) })}
-                        placeholder={'玉ねぎ 1個\nにんじん 1本'}
-                        className="w-full min-h-[80px] px-3 py-2 text-base border border-gray-200 rounded-md touch-manipulation"
-                        rows={3}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-gray-600 mb-1">手順（1行1項目）</label>
-                      <textarea
-                        value={(recipe.steps ?? []).join('\n')}
-                        onChange={(e) => handleRecipeChange(vendorIndex, itemIndex, { ...recipe, steps: e.target.value.split('\n').map(s => s.trim()).filter(Boolean) })}
-                        placeholder={'野菜を切る\n炒める'}
-                        className="w-full min-h-[80px] px-3 py-2 text-base border border-gray-200 rounded-md touch-manipulation"
-                        rows={3}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-gray-600 mb-1">ポイント</label>
-                      <textarea
-                        value={recipe.points ?? ''}
-                        onChange={(e) => handleRecipeChange(vendorIndex, itemIndex, { ...recipe, points: e.target.value })}
-                        placeholder="火を通しすぎない"
-                        className="w-full min-h-[60px] px-3 py-2 text-base border border-gray-200 rounded-md touch-manipulation"
-                        rows={2}
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-bold text-gray-600 mb-1">目安所要時間（分）</label>
-                      <input
-                        type="number"
-                        value={recipe.estimatedMinutes ?? ''}
-                        onChange={(e) => handleRecipeChange(vendorIndex, itemIndex, { ...recipe, estimatedMinutes: e.target.value === '' ? undefined : parseInt(e.target.value, 10) || 0 })}
-                        placeholder="15"
-                        min={0}
-                        className="w-[100px] min-h-[44px] px-3 py-2 text-base border border-gray-200 rounded-md touch-manipulation"
-                        inputMode="numeric"
-                      />
-                    </div>
-                  </div>
-                )}
+          {vendor.items.map((item, itemIndex) => (
+            <div key={itemIndex} className="flex flex-col sm:flex-row gap-2 items-stretch sm:items-center mb-2 sm:mb-1.5">
+              <input
+                type="text"
+                value={item.name}
+                onChange={(e) => handleItemChange(vendorIndex, itemIndex, 'name', e.target.value)}
+                placeholder="品目名"
+                className="flex-1 min-w-0 min-h-[44px] px-3 py-2 text-base sm:text-sm border border-gray-200 rounded-md touch-manipulation"
+              />
+              <div className="flex gap-2 flex-wrap">
+                <input
+                  type="text"
+                  value={item.unit}
+                  onChange={(e) => handleItemChange(vendorIndex, itemIndex, 'unit', e.target.value)}
+                  placeholder="単位"
+                  className="w-[80px] sm:w-[60px] min-h-[44px] px-2 py-2 text-base sm:text-sm border border-gray-200 rounded-md touch-manipulation"
+                />
+                <input
+                  type="number"
+                  value={item.price}
+                  onChange={(e) => handleItemChange(vendorIndex, itemIndex, 'price', parseFloat(e.target.value) || 0)}
+                  placeholder="単価"
+                  className="w-[100px] sm:w-[70px] min-h-[44px] px-2 py-2 text-base sm:text-sm border border-gray-200 rounded-md touch-manipulation"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleRemoveItem(vendorIndex, itemIndex)}
+                  className="min-h-[44px] px-3 py-2 text-sm sm:text-xs rounded-md border border-red-600 text-red-600 active:bg-red-50 touch-manipulation whitespace-nowrap"
+                >
+                  削除
+                </button>
               </div>
-            )
-          })}
+            </div>
+          ))}
 
           <div className="mt-2">
             <textarea
@@ -313,6 +253,90 @@ export function MasterEditor() {
       >
         ＋ 業者を追加
       </button>
+
+      {/* 仕込みレシピ（仕込みタブ用） */}
+      <div className="mt-10 pt-6 border-t-2 border-gray-200">
+        <h4 className="text-sm font-bold mb-1">仕込みレシピ</h4>
+        <p className="text-xs text-gray-500 mb-4">
+          仕込みタブで行をタップしたときに表示するレシピを、品目ごとに設定できます。
+        </p>
+        {vendors.map((vendor, vendorIndex) => (
+          <div key={vendorIndex} className="mb-4">
+            <div className="text-xs font-bold text-gray-600 mb-2">{vendor.name || '（業者名未設定）'}</div>
+            <ul className="list-none p-0 m-0 space-y-2">
+              {vendor.items.map((item, itemIndex) => {
+                const recipeKey = `prep-${vendorIndex}-${itemIndex}`
+                const isRecipeOpen = recipeOpenKey === recipeKey
+                const recipe = item.recipe ?? defaultRecipe()
+                const itemLabel = item.name || '（品目名未設定）'
+                return (
+                  <li key={itemIndex} className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                    <div className="flex items-center gap-2 p-2">
+                      <span className="flex-1 text-sm font-medium truncate">{itemLabel}</span>
+                      <button
+                        type="button"
+                        onClick={() => toggleRecipe(recipeKey)}
+                        className="min-h-[40px] px-3 py-2 text-sm rounded-md border border-blue-600 text-blue-600 active:bg-blue-50 touch-manipulation whitespace-nowrap"
+                      >
+                        {isRecipeOpen ? '閉じる' : 'レシピを編集'}
+                      </button>
+                    </div>
+                    {isRecipeOpen && (
+                      <div className="p-3 pt-0 border-t border-gray-100 space-y-3">
+                        <div>
+                          <label className="block text-xs font-bold text-gray-600 mb-1">材料（1行1項目）</label>
+                          <textarea
+                            value={(recipe.ingredients ?? []).join('\n')}
+                            onChange={(e) => handleRecipeChange(vendorIndex, itemIndex, { ...recipe, ingredients: e.target.value.split('\n').map(s => s.trim()).filter(Boolean) })}
+                            placeholder={'玉ねぎ 1個\nにんじん 1本'}
+                            className="w-full min-h-[80px] px-3 py-2 text-base border border-gray-200 rounded-md touch-manipulation"
+                            rows={3}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-gray-600 mb-1">手順（1行1項目）</label>
+                          <textarea
+                            value={(recipe.steps ?? []).join('\n')}
+                            onChange={(e) => handleRecipeChange(vendorIndex, itemIndex, { ...recipe, steps: e.target.value.split('\n').map(s => s.trim()).filter(Boolean) })}
+                            placeholder={'野菜を切る\n炒める'}
+                            className="w-full min-h-[80px] px-3 py-2 text-base border border-gray-200 rounded-md touch-manipulation"
+                            rows={3}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-gray-600 mb-1">ポイント</label>
+                          <textarea
+                            value={recipe.points ?? ''}
+                            onChange={(e) => handleRecipeChange(vendorIndex, itemIndex, { ...recipe, points: e.target.value })}
+                            placeholder="火を通しすぎない"
+                            className="w-full min-h-[60px] px-3 py-2 text-base border border-gray-200 rounded-md touch-manipulation"
+                            rows={2}
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs font-bold text-gray-600 mb-1">目安所要時間（分）</label>
+                          <input
+                            type="number"
+                            value={recipe.estimatedMinutes ?? ''}
+                            onChange={(e) => handleRecipeChange(vendorIndex, itemIndex, { ...recipe, estimatedMinutes: e.target.value === '' ? undefined : parseInt(e.target.value, 10) || 0 })}
+                            placeholder="15"
+                            min={0}
+                            className="w-[100px] min-h-[44px] px-3 py-2 text-base border border-gray-200 rounded-md touch-manipulation"
+                            inputMode="numeric"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </li>
+                )
+              })}
+            </ul>
+            {vendor.items.length === 0 && (
+              <p className="text-xs text-gray-400">品目がありません。上で業者に品目を追加してください。</p>
+            )}
+          </div>
+        ))}
+      </div>
     </div>
   )
 }
