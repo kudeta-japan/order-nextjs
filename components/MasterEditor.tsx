@@ -277,7 +277,6 @@ export function MasterEditor() {
                 placeholder="品目名"
                 className="flex-1 min-w-0 min-h-[44px] px-3 py-2 text-base sm:text-sm border border-gray-200 rounded-md touch-manipulation"
               />
-              <span className="text-xs text-gray-600 whitespace-nowrap self-center">カテゴリー</span>
               <select
                 value={item.category ?? ''}
                 onChange={(e) => handleItemChange(vendorIndex, itemIndex, 'category', e.target.value || undefined)}
